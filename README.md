@@ -8,6 +8,7 @@ Integrated with **LucidaDL** to fetch lossless master audio (FLAC, Hi-Res) from 
 
 ## 🌟 Key Features
 
+<<<<<<< HEAD
 - **🚀 2 GB Direct MTProto Uploads (Bypassing 50 MB Limit):**
   - Unlike standard Bot API bots (which strictly enforce a 50 MB upload limit from disk), this userbot connects as a client via MTProto and can upload files up to **2,000 MB (2 GB)** directly.
 - **💾 Persistent Login Session in Google Cloud Shell:**
@@ -20,6 +21,32 @@ Integrated with **LucidaDL** to fetch lossless master audio (FLAC, Hi-Res) from 
   - Automatically embeds track title, artist, album, duration, and album cover art thumbnail using `DocumentAttributeAudio`.
 - **💻 CLI Direct Upload Mode:**
   - Quickly upload any large file on your Google Cloud Shell disk directly to your "Saved Messages" or a chat straight from the terminal.
+=======
+- **🎧 Universal Music Downloader:**
+  - Auto-detects tracks, albums, and playlists from shared URLs.
+  - Supports raw search queries (e.g., `Adele - Easy On Me`).
+  - Fetches from top lossless sources (Qobuz 24-bit Hi-Res, Amazon Music HD, etc.).
+- **🎛️ Interactive In-Chat Settings (`/settings`):**
+  - Choose output audio format: `FLAC (Lossless)`, `MP3 (320k)`, `AAC / M4A`, `OPUS`, `OGG`, `WAV`.
+  - Transcoding bitrate selection: `320k`, `256k`, `192k`, `128k`.
+  - Streaming provider selection: `Default (Auto)`, `Qobuz`, `Amazon Music`, `GrilledCheese`.
+  - Delivery mode: Native Telegram Audio Player (with cover art) or Raw Document.
+- **🎨 Rich Metadata & Artwork:**
+  - Extracts and embeds track title, artist, album name, track duration, and album cover art thumbnail into Telegram's native player.
+- **⚡ Async Concurrency & Queue Manager:**
+  - Prevents server overload with configurable worker pool (`MAX_CONCURRENT_DOWNLOADS`).
+  - Real-time download progress updates and debounced status editing.
+  - In-chat cancellation button (`[ ❌ Cancel ]`) for active or queued downloads.
+- **📦 Smart Telegram Upload Handling:**
+  - Telegram Cloud Bot API restricts file uploads to **50MB**. If a lossless FLAC exceeds 50MB, the bot automatically compresses it to a pristine 320kbps MP3 so you never miss a track.
+  - Supports **Local Telegram Bot API Server** (`LOCAL_BOT_API_URL`) for up to **2GB** per audio file!
+- **🛡️ Access Control & Admin Tools:**
+  - Whitelist mode (`ALLOWED_USERS`) to keep the bot private, or open to all.
+  - `/doctor` command: Runs diagnostic self-checks.
+  - `/status` command: Real-time system resources (CPU, RAM, Disk) and download counters.
+  - `/setup_help`: Step-by-step guidance for Cloudflare clearance.
+  - Automatic temp directory cleanup after files are uploaded.
+>>>>>>> parent of 30d016f (nice)
 
 ---
 
@@ -73,12 +100,25 @@ Send these commands from your Telegram account in **Saved Messages** or any chat
 
 | Command | Description |
 | :--- | :--- |
+<<<<<<< HEAD
 | `.flac <song or link>` | Download track/album/playlist and stream up to 2GB via MTProto |
 | `.dl <song or link>` | Alias for `.flac` |
 | `.upload <filepath>` | Directly upload any file sitting on Google Cloud Shell storage |
 | `.status` | Display Google Cloud Shell CPU, RAM, disk space, and MTProto info |
 | `.doctor` | Run LucidaDL diagnostic checks |
 | `.help` | Show command guide |
+=======
+| `/start` | Launch the bot and view introduction |
+| `/track <query or link>` | Download a single audio track |
+| `/album <query or link>` | Download an entire album |
+| `/playlist <link>` | Download an entire public streaming playlist |
+| `/settings` | Open interactive format, bitrate, and provider selector |
+| `/status` | View server CPU, RAM, disk space, and bot download statistics |
+| `/help` | Detailed help and supported music services |
+| `/doctor` *(Admin)* | Run `lucida doctor --live` connection diagnostics |
+| `/setup_help` *(Admin)* | View Cloudflare clearance instructions |
+| `/broadcast <msg>` *(Admin)* | Send an announcement to all users in the database |
+>>>>>>> parent of 30d016f (nice)
 
 > **Direct Link Support:** You can simply paste any Spotify, Apple Music, Deezer, Tidal, or Qobuz link directly into **Saved Messages**!
 

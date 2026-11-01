@@ -1,6 +1,7 @@
 import asyncio
 import time
 from pathlib import Path
+<<<<<<< HEAD
 from typing import Optional, Callable, Any, Union, List
 
 from telethon import TelegramClient
@@ -20,6 +21,12 @@ from rich.progress import (
 )
 from rich.console import Console
 
+=======
+from typing import List, Optional, Callable, Awaitable
+from aiogram import Bot
+from aiogram.types import FSInputFile
+from bot.config import config
+>>>>>>> parent of 30d016f (nice)
 from bot.services.audio_metadata import AudioMetadataExtractor, AudioMetadata
 from bot.utils.helpers import format_bytes, format_duration
 
@@ -27,6 +34,7 @@ from bot.utils.helpers import format_bytes, format_duration
 console = Console()
 
 
+<<<<<<< HEAD
 def create_rich_progress() -> Progress:
     """Create a styled rich progress bar for terminal display."""
     return Progress(
@@ -138,6 +146,101 @@ class TelethonUploader:
                     f"📤 **Uploading to Telegram (MTProto 2GB)**\n"
                     f"📁 `{filename}`\n"
                     f"📊 `{current / (1024*1024):.1f} MB / {total / (1024*1024):.1f} MB` ({pct:.1f}%)\n"
+=======
+    async def upload_files(
+        self,
+        chat_id: int,
+        files: List[Path],
+        send_as: str = "audio",
+        progress_cb: Optional[Callable[[str], Awaitable[None]]] = None
+    ) -> int:
+        """
+        Uploads audio files to Telegram chat.
+        Returns count of successfully sent files.
+        """
+        if not files:
+            return 0
+
+        total_files = len(files)
+        sent_count = 0
+        is_local_api = bool(config.LOCAL_BOT_API_URL)
+        max_allowed_size = self.MAX_LOCAL_SIZE if is_local_api else self.MAX_STANDARD_SIZE
+
+        # Sort files naturally by name (e.g. 01 - Song, 02 - Song)
+        files = sorted(files, key=lambda f: f.name)
+
+        for index, file_path in enumerate(files, start=1):
+            if not file_path.exists():
+                continue
+
+            file_size = file_path.stat().st_size
+            curr_file = file_path
+            temp_files_to_clean: List[Path] = []
+            compressed_note = ""
+
+            # Check file size limit
+            if file_size > max_allowed_size:
+                if not is_local_api and config.AUTO_COMPRESS_LARGE_FILES:
+                    if progress_cb:
+                        await progress_cb(
+                            f"🔄 File size {format_bytes(file_size)} exceeds Telegram's 50MB limit. "
+                            f"Compressing to 320kbps MP3..."
+                        )
+
+                    compressed = AudioMetadataExtractor.compress_to_mp3(file_path, "320k")
+                    if compressed and compressed.exists():
+                        compressed_size = compressed.stat().st_size
+                        if compressed_size <= max_allowed_size:
+                            curr_file = compressed
+                            temp_files_to_clean.append(compressed)
+                            compressed_note = (
+                                f"\n<i>ℹ️ Auto-compressed from {format_bytes(file_size)} "
+                                f"to {format_bytes(compressed_size)} to fit Telegram's 50MB limit.</i>"
+                            )
+                        else:
+                            # Still too large
+                            temp_files_to_clean.append(compressed)
+                            await self.bot.send_message(
+                                chat_id=chat_id,
+                                text=(
+                                    f"⚠️ <b>Skipped file:</b> {escape_html(file_path.name)}\n"
+                                    f"Size: {format_bytes(file_size)} (even compressed: {format_bytes(compressed_size)}).\n"
+                                    f"Exceeds standard Telegram Bot API 50MB upload limit."
+                                ),
+                                parse_mode="HTML"
+                            )
+                            continue
+                    else:
+                        await self.bot.send_message(
+                            chat_id=chat_id,
+                            text=(
+                                f"⚠️ <b>Skipped file:</b> {escape_html(file_path.name)}\n"
+                                f"Size: {format_bytes(file_size)} (> 50MB limit).\n"
+                                f"Consider setting your preference to MP3 or OPUS in /settings."
+                            ),
+                            parse_mode="HTML"
+                        )
+                        continue
+                else:
+                    await self.bot.send_message(
+                        chat_id=chat_id,
+                        text=(
+                            f"⚠️ <b>Skipped file:</b> {escape_html(file_path.name)}\n"
+                            f"Size: {format_bytes(file_size)} (> 50MB limit)."
+                        ),
+                        parse_mode="HTML"
+                    )
+                    continue
+
+            # Extract rich metadata
+            meta: AudioMetadata = AudioMetadataExtractor.extract(curr_file)
+            if meta.thumbnail_path and meta.thumbnail_path.exists():
+                temp_files_to_clean.append(meta.thumbnail_path)
+
+            if progress_cb:
+                await progress_cb(
+                    f"📤 Uploading ({index}/{total_files}): <b>{escape_html(meta.title)}</b>..."
+>>>>>>> parent of 30d016f (nice)
                 )
                 try:
                     res = chat_status_callback(status_text)
@@ -158,6 +261,7 @@ class TelethonUploader:
             )
             return sent_message
 
+<<<<<<< HEAD
         finally:
             if rich_progress:
                 rich_progress.stop()
@@ -193,6 +297,38 @@ class TelethonUploader:
                 sent += 1
                 if index < total:
                     await asyncio.sleep(1.0)
+=======
+            try:
+                if send_as == "document":
+                    doc = FSInputFile(str(curr_file))
+                    thumb = FSInputFile(str(meta.thumbnail_path)) if meta.thumbnail_path and meta.thumbnail_path.exists() else None
+                    await self.bot.send_document(
+                        chat_id=chat_id,
+                        document=doc,
+                        thumbnail=thumb,
+                        caption=caption,
+                        parse_mode="HTML"
+                    )
+                else:
+                    audio = FSInputFile(str(curr_file))
+                    thumb = FSInputFile(str(meta.thumbnail_path)) if meta.thumbnail_path and meta.thumbnail_path.exists() else None
+                    await self.bot.send_audio(
+                        chat_id=chat_id,
+                        audio=audio,
+                        duration=meta.duration,
+                        performer=meta.performer,
+                        title=meta.title,
+                        thumbnail=thumb,
+                        caption=caption,
+                        parse_mode="HTML"
+                    )
+
+                sent_count += 1
+                # Small pause to avoid hitting Telegram flood limits
+                if total_files > 1 and index < total_files:
+                    await asyncio.sleep(0.8)
+
+>>>>>>> parent of 30d016f (nice)
             except Exception as e:
                 console.print(f"[bold red]Failed to upload {f.name}: {e}[/]")
 

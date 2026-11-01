@@ -149,48 +149,6 @@ class QueueManager:
         files_sent = 0
 
         try:
-            # 1. PRE-CHECK CACHE: Check if this target/query is already cached in Telegram cloud!
-            format_type = job.settings.get("audio_format", "flac").lower()
-            query_key = f"query:{job.target.strip().lower()}:{format_type}"
-            cached = await db.get_cached_file(query_key)
-            if not cached:
-                cached = await db.get_cached_file(job.target.strip().lower())
-
-            if cached and cached.get("file_id"):
-                job.status = "uploading"
-                await self._safe_edit_status(
-                    chat_id=job.chat_id,
-                    message_id=job.status_message_id,
-                    text=(
-                        f"⚡ <b>Found in Telegram Cloud Cache!</b>\n"
-                        f"🎯 <code>{escape_html(job.target)}</code>\n\n"
-                        f"🚀 Sending <b>{escape_html(cached.get('title') or cached.get('file_name'))}</b> "
-                        f"instantly using cached Telegram file_id (bypassing download & 50MB limits)..."
-                    ),
-                    reply_markup=None,
-                    force=True
-                )
-                await self.uploader.send_cached_file(
-                    chat_id=job.chat_id,
-                    cached=cached
-                )
-                job.status = "completed"
-                await self._safe_edit_status(
-                    chat_id=job.chat_id,
-                    message_id=job.status_message_id,
-                    text=f"✅ <b>Done!</b> Sent track instantly from Telegram cloud cache. Enjoy your music!",
-                    reply_markup=None,
-                    force=True
-                )
-                await db.log_download(
-                    user_id=job.user_id,
-                    query=job.target,
-                    command_type=job.command_type,
-                    status="completed",
-                    files_count=1
-                )
-                return
-
             job.status = "downloading"
             cancel_kb = get_cancel_keyboard(job.job_id)
 
@@ -255,9 +213,7 @@ class QueueManager:
                 chat_id=job.chat_id,
                 files=downloaded_files,
                 send_as=job.settings.get("send_as", "audio"),
-                progress_cb=on_upload_progress,
-                query_target=job.target,
-                format_type=job.settings.get("audio_format", "flac")
+                progress_cb=on_upload_progress
             )
 
             job.status = "completed"
