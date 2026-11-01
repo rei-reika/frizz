@@ -14,9 +14,9 @@ export PATH="$HOME/.local/bin:$PATH"
 
 if [ ! -f "$DIR/.env" ]; then
     echo "❌ Error: .env file not found in $DIR!"
-    echo "Copy .env.example to .env and fill in your BOT_TOKEN."
+    echo "Copy .env.example to .env and configure your API_ID and API_HASH."
     exit 1
 fi
 
-echo "🚀 Starting FlacDL Telegram Bot..."
-exec python3 -m bot.main
+echo "🚀 Starting FlacDL Telethon MTProto Userbot..."
+exec python3 -m bot.main "$@"

@@ -1,100 +1,74 @@
 import asyncio
-import logging
 import sys
-from aiogram import Bot, Dispatcher
-from aiogram.client.default import DefaultBotProperties
-from aiogram.client.session.aiohttp import AiohttpSession
-from aiogram.client.telegram import TelegramAPIServer
-from aiogram.enums import ParseMode
-from aiogram.types import BotCommand, BotCommandScopeDefault
+from pathlib import Path
+
+from rich.console import Console
+from rich.panel import Panel
 
 from bot.config import config
-from bot.database import db
-from bot.middlewares import AccessControlMiddleware
-from bot.handlers import register_handlers
-from bot.services import init_queue
+from bot.services.telethon_client import get_client, start_client_interactive
+from bot.services.uploader import TelethonUploader
+from bot.handlers.userbot_handlers import register_userbot_handlers
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    handlers=[logging.StreamHandler(sys.stdout)]
-)
-logger = logging.getLogger("flacdl_bot")
-
-
-async def set_default_commands(bot: Bot):
-    """Set default slash commands in Telegram menu."""
-    commands = [
-        BotCommand(command="track", description="Download single track (or text query)"),
-        BotCommand(command="album", description="Download full album"),
-        BotCommand(command="playlist", description="Download public streaming playlist"),
-        BotCommand(command="settings", description="Audio format, bitrate & service preferences"),
-        BotCommand(command="help", description="Supported services and instructions"),
-        BotCommand(command="status", description="Server resources and statistics")
-    ]
-    try:
-        await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
-    except Exception as e:
-        logger.warning(f"Could not set default commands: {e}")
+console = Console()
 
 
 async def main():
-    if not config.BOT_TOKEN or config.BOT_TOKEN == "123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ":
-        logger.error(
-            "CRITICAL: BOT_TOKEN is not set!\n"
-            "Please copy .env.example to .env and configure your BOT_TOKEN from @BotFather."
+    console.print(
+        Panel(
+            "[bold cyan]FlacDL Telethon MTProto Userbot[/bold cyan]\n"
+            "[dim]Direct High-Speed Large File Streaming (Up to 2GB) from Google Cloud Shell[/dim]\n\n"
+            f"• [white]API ID:[/] [yellow]{config.API_ID}[/]\n"
+            f"• [white]Session Path:[/] [green]{config.session_file_path}.session[/]\n"
+            f"• [white]Command Prefix:[/] [cyan]{config.COMMAND_PREFIX}[/]\n"
+            f"• [white]Max MTProto File Size:[/] [magenta]2,000 MB (2 GB)[/]",
+            title="[bold green]System Starting[/]",
+            border_style="cyan"
         )
-        sys.exit(1)
-
-    # Initialize Database
-    logger.info("Initializing SQLite database...")
-    await db.init()
-
-    # Configure session and Bot instance
-    session = None
-    if config.LOCAL_BOT_API_URL:
-        logger.info(f"Using custom Local Telegram Bot API server: {config.LOCAL_BOT_API_URL}")
-        custom_server = TelegramAPIServer.from_base(config.LOCAL_BOT_API_URL)
-        session = AiohttpSession(api=custom_server)
-
-    bot = Bot(
-        token=config.BOT_TOKEN,
-        session=session,
-        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
 
-    dp = Dispatcher()
+    client = get_client()
 
-    # Middlewares
-    dp.message.middleware(AccessControlMiddleware())
-    dp.callback_query.middleware(AccessControlMiddleware())
+    # Start client (handles initial phone/code/2FA login or uses existing session)
+    await start_client_interactive(client)
 
-    # Handlers
-    register_handlers(dp)
+    # CLI mode check: direct upload from terminal
+    # Example: python -m bot.main upload /path/to/song.flac [chat_id/username]
+    if len(sys.argv) >= 3 and sys.argv[1].lower() == "upload":
+        target_file = Path(sys.argv[2]).expanduser()
+        target_chat = sys.argv[3] if len(sys.argv) >= 4 else "me"  # default to 'me' (Saved Messages)
 
-    # Start Queue Manager
-    logger.info("Starting download queue manager...")
-    queue_mgr = init_queue(bot)
+        console.print(f"[bold yellow]Direct CLI upload mode:[/] {target_file} -> {target_chat}")
+        uploader = TelethonUploader(client)
+        try:
+            await uploader.upload_file(
+                entity=target_chat,
+                file_path=target_file,
+                show_terminal_progress=True
+            )
+            console.print("[bold green]✅ CLI Upload completed successfully![/]")
+        except Exception as e:
+            console.print(f"[bold red]❌ CLI Upload failed: {e}[/]")
+        finally:
+            await client.disconnect()
+            return
 
-    # Bot Commands
-    await set_default_commands(bot)
-
-    logger.info("FlacDL Telegram Bot is up and running! Starting polling...")
+    # Userbot Listener Daemon mode
+    register_userbot_handlers(client)
+    console.print("[bold green]📡 Userbot is listening for commands and music links in Telegram...[/]")
+    console.print(f"[dim]Send [cyan]{config.COMMAND_PREFIX}help[/] in Saved Messages or any chat to see available commands.[/dim]\n")
 
     try:
-        # Delete pending webhook updates and start polling
-        await bot.delete_webhook(drop_pending_updates=True)
-        await dp.start_polling(bot)
+        await client.run_until_disconnected()
+    except (KeyboardInterrupt, SystemExit):
+        console.print("[yellow]Userbot stopped by user.[/]")
     finally:
-        logger.info("Shutting down bot...")
-        await queue_mgr.stop()
-        await bot.session.close()
-        logger.info("Shutdown complete.")
+        if client.is_connected():
+            await client.disconnect()
 
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
-        logger.info("Bot process exited.")
+        pass

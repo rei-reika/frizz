@@ -1,169 +1,100 @@
-# 🎵 FlacDL Telegram Bot
+# ⚡ FlacDL Telethon MTProto Userbot (Google Cloud Shell)
 
-A production-grade, asynchronous Telegram Bot designed to download lossless (FLAC) and high-bitrate music using **`lucidadl`** and **`lucida.to`**.
+A high-performance **Telethon-based Telegram Userbot** designed to bypass the standard Bot API 50 MB limitation by streaming large files (up to **2 GB**) directly from **Google Cloud Shell** storage using Telegram's native **MTProto protocol**.
 
-Supports seamless single-track downloads, full albums, and entire public streaming playlists from **Spotify, Apple Music, Deezer, TIDAL, Qobuz, SoundCloud, Amazon Music, and YouTube Music**.
-
----
-
-## ✨ Features
-
-- **🎧 Universal Music Downloader:**
-  - Auto-detects tracks, albums, and playlists from shared URLs.
-  - Supports raw search queries (e.g., `Adele - Easy On Me`).
-  - Fetches from top lossless sources (Qobuz 24-bit Hi-Res, Amazon Music HD, etc.).
-- **🎛️ Interactive In-Chat Settings (`/settings`):**
-  - Choose output audio format: `FLAC (Lossless)`, `MP3 (320k)`, `AAC / M4A`, `OPUS`, `OGG`, `WAV`.
-  - Transcoding bitrate selection: `320k`, `256k`, `192k`, `128k`.
-  - Streaming provider selection: `Default (Auto)`, `Qobuz`, `Amazon Music`, `GrilledCheese`.
-  - Delivery mode: Native Telegram Audio Player (with cover art) or Raw Document.
-- **🎨 Rich Metadata & Artwork:**
-  - Extracts and embeds track title, artist, album name, track duration, and album cover art thumbnail into Telegram's native player.
-- **⚡ Async Concurrency & Queue Manager:**
-  - Prevents server overload with configurable worker pool (`MAX_CONCURRENT_DOWNLOADS`).
-  - Real-time download progress updates and debounced status editing.
-  - In-chat cancellation button (`[ ❌ Cancel ]`) for active or queued downloads.
-- **📦 Smart Telegram file_id Cloud Caching & 50MB Limit Bypass:**
-  - Built-in SQLite database caching system maps song keys, filenames, and query URLs directly to Telegram's cloud `file_id`.
-  - **Instant Delivery:** Subsequent requests for the same track are sent instantly via `file_id` (0 bandwidth, 0 server CPU).
-  - **Bypasses 50MB Upload Limit:** Files delivered by `file_id` are already hosted in Telegram's cloud datacenter, completely bypassing the local 50MB upload limitation!
-  - **Admin Pre-Caching (up to 2GB):** Admins can forward or upload files directly to the bot to pre-cache large FLAC files.
-  - Automatic 320kbps MP3 fallback compression if a new un-cached FLAC initially exceeds 50MB.
-- **🛡️ Access Control & Admin Tools:**
-  - Whitelist mode (`ALLOWED_USERS`) to keep the bot private, or open to all.
-  - `/cache`: View total cached files, cache hits, and saved bandwidth.
-  - `/delcache <key>`: Delete a cached file entry.
-  - `/doctor` command: Runs diagnostic self-checks.
-  - `/status` command: Real-time system resources (CPU, RAM, Disk) and download counters.
-  - `/setup_help`: Step-by-step guidance for Cloudflare clearance.
-  - Automatic temp directory cleanup after files are uploaded.
+Integrated with **LucidaDL** to fetch lossless master audio (FLAC, Hi-Res) from **Spotify, Apple Music, Deezer, TIDAL, Qobuz, SoundCloud, and Amazon Music**.
 
 ---
 
-## 🚀 Quick Start (Native Linux / VPS)
+## 🌟 Key Features
 
-### 1. Prerequisites
-- **Python 3.10+** (Tested on Python 3.12 & 3.13)
-- **FFmpeg** (for metadata and compression fallback):
-  ```bash
-  sudo apt update && sudo apt install -y ffmpeg xvfb
-  ```
+- **🚀 2 GB Direct MTProto Uploads (Bypassing 50 MB Limit):**
+  - Unlike standard Bot API bots (which strictly enforce a 50 MB upload limit from disk), this userbot connects as a client via MTProto and can upload files up to **2,000 MB (2 GB)** directly.
+- **💾 Persistent Login Session in Google Cloud Shell:**
+  - Google Cloud Shell only preserves files located inside `$HOME`. Any files in `/tmp` or system directories are erased on restart.
+  - The login session is explicitly pinned to **`$HOME/.telethon_sessions/flacdl_userbot.session`** so you never get logged out automatically when Cloud Shell restarts or goes idle.
+- **📊 Interactive Terminal Progress Bar (`rich`):**
+  - Live visual progress bar in the terminal with transfer speed (`MB/s`), uploaded/total size, percentage, and estimated time remaining (ETA).
+- **🎶 Full Music Downloader (`lucidadl`):**
+  - Handles single tracks, full albums, and streaming playlists.
+  - Automatically embeds track title, artist, album, duration, and album cover art thumbnail using `DocumentAttributeAudio`.
+- **💻 CLI Direct Upload Mode:**
+  - Quickly upload any large file on your Google Cloud Shell disk directly to your "Saved Messages" or a chat straight from the terminal.
 
-### 2. Install Dependencies
-Run the automated setup script:
+---
+
+## 🛠️ Requirements & Installation
+
+### 1. Telegram API Credentials
+You need an **API ID** and **API HASH** (not a bot token).
+1. Log in to [https://my.telegram.org](https://my.telegram.org) with your phone number.
+2. Go to **API development tools**.
+3. Create an application (any name/short name) and copy your `API_ID` and `API_HASH`.
+
+### 2. Setup on Google Cloud Shell
+Run the setup script or install dependencies:
 ```bash
-./setup.sh
-```
-Or manually install dependencies:
-```bash
-python3 -m venv venv
+cd ~/t-server
 source venv/bin/activate
 pip install -r requirements.txt
 pip install lucidadl playwright
-python -m playwright install chromium
 ```
 
 ### 3. Configure `.env`
-Copy the example environment configuration:
 ```bash
 cp .env.example .env
 nano .env
 ```
-Set your `BOT_TOKEN` obtained from [@BotFather](https://t.me/BotFather):
+Fill in your credentials:
 ```ini
-BOT_TOKEN=123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ
-ALLOWED_USERS=              # Optional: your Telegram user ID
-ADMIN_IDS=                  # Optional: your Telegram user ID
+API_ID=12345678
+API_HASH=0123456789abcdef0123456789abcdef
 ```
 
-### 4. Cloudflare Clearance Setup
-Because `lucida.to` uses Cloudflare protection, `lucidadl` needs an initial clearance session token:
+---
 
-#### Option A: Headless Linux Server (using Xvfb)
-Run the bundled assistant:
-```bash
-./scripts/setup_lucida_session.sh
-```
-Or manually:
-```bash
-xvfb-run -a lucida setup
-```
+## 🚀 Running the Userbot
 
-#### Option B: Setup on Local Desktop & Copy Session (Most Reliable)
-If Cloudflare triggers an interactive Turnstile captcha that cannot complete headlessly:
-1. On your personal computer (Windows/macOS/Linux Desktop):
-   ```bash
-   pipx install lucidadl
-   lucida setup
-   ```
-2. Complete the browser check.
-3. Copy the generated data folder to your server:
-   - Linux/macOS: `~/.local/share/lucidadl`
-   - Windows: `%LOCALAPPDATA%\lucidadl`
-   - Destination on server: `~/.local/share/lucidadl`
-
-### 5. Launch the Bot
+### First-Time Interactive Login
+Start the userbot using the runner script:
 ```bash
 ./scripts/run_bot.sh
 ```
+1. You will be prompted in the terminal for your **Phone number** (with country code, e.g. `+628123456789`).
+2. Telegram will send a verification code to your Telegram app. Enter the code in the terminal.
+3. If you have Two-Step Verification (2FA) enabled, enter your password.
+4. **Session saved!** The session file is safely written to `$HOME/.telethon_sessions/flacdl_userbot.session` and will persist indefinitely.
 
 ---
 
-## 🐳 Docker Deployment
+## 💬 Userbot Commands
 
-You can deploy the entire stack using Docker Compose:
-
-```bash
-# 1. Edit .env with your BOT_TOKEN
-cp .env.example .env
-nano .env
-
-# 2. Build and start container
-docker compose up -d --build
-
-# 3. View logs
-docker compose logs -f
-```
-
----
-
-## ⚙️ Running as a Systemd Service
-
-To keep the bot running 24/7 in the background and start automatically on boot:
-
-1. Verify paths and user in `flacdl.service`.
-2. Install and enable the service:
-```bash
-sudo cp flacdl.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now flacdl
-```
-3. Check service status:
-```bash
-sudo systemctl status flacdl
-journalctl -u flacdl -f
-```
-
----
-
-## 💬 Bot Commands
+Send these commands from your Telegram account in **Saved Messages** or any chat:
 
 | Command | Description |
 | :--- | :--- |
-| `/start` | Launch the bot and view introduction |
-| `/track <query or link>` | Download a single audio track |
-| `/album <query or link>` | Download an entire album |
-| `/playlist <link>` | Download an entire public streaming playlist |
-| `/settings` | Open interactive format, bitrate, and provider selector |
-| `/status` | View server CPU, RAM, disk space, and bot download statistics |
-| `/help` | Detailed help and supported music services |
-| `/cache` *(Admin)* | View Telegram file_id cloud cache stats & hits |
-| `/delcache <key>` *(Admin)* | Remove a cached entry from database |
-| `/doctor` *(Admin)* | Run `lucida doctor --live` connection diagnostics |
-| `/setup_help` *(Admin)* | View Cloudflare clearance instructions |
-| `/broadcast <msg>` *(Admin)* | Send an announcement to all users in the database |
+| `.flac <song or link>` | Download track/album/playlist and stream up to 2GB via MTProto |
+| `.dl <song or link>` | Alias for `.flac` |
+| `.upload <filepath>` | Directly upload any file sitting on Google Cloud Shell storage |
+| `.status` | Display Google Cloud Shell CPU, RAM, disk space, and MTProto info |
+| `.doctor` | Run LucidaDL diagnostic checks |
+| `.help` | Show command guide |
 
-> **Tip:** You do not need to type `/track` or `/album`. Simply sending a Spotify or Apple Music link directly into the chat will automatically detect the type and start downloading!
+> **Direct Link Support:** You can simply paste any Spotify, Apple Music, Deezer, Tidal, or Qobuz link directly into **Saved Messages**!
+
+---
+
+## 💻 Terminal CLI Direct Upload
+
+You can also upload any large file from your Google Cloud Shell storage directly from the terminal without using the chat:
+
+```bash
+# Upload to your Saved Messages:
+./scripts/run_bot.sh upload /path/to/large_audio.flac
+
+# Upload to a specific chat / user / channel:
+./scripts/run_bot.sh upload /path/to/large_album.zip @username_or_channel
+```
 
 ---
 
@@ -172,37 +103,22 @@ journalctl -u flacdl -f
 ```
 t-server/
 ├── bot/
-│   ├── config.py              # Environment configuration & access control
-│   ├── database.py            # SQLite database (settings & statistics)
-│   ├── keyboards.py           # Interactive inline keyboards (settings & cancel)
-│   ├── main.py                # Bot lifecycle, polling & command menus
+│   ├── config.py              # Settings & persistent $HOME session path logic
+│   ├── main.py                # Telethon client lifecycle, CLI mode & runner
 │   ├── handlers/
-│   │   ├── common.py          # /start, /help, /about
-│   │   ├── download.py        # /track, /album, /playlist, link detection
-│   │   ├── settings.py        # /settings inline interactive menu
-│   │   └── admin.py           # /doctor, /status, /setup_help, /broadcast
-│   ├── middlewares/
-│   │   └── auth.py            # User ID whitelist & access control
+│   │   └── userbot_handlers.py# Userbot event listeners (.flac, .upload, .status)
 │   ├── services/
-│   │   ├── lucida.py          # Asynchronous lucidadl execution & progress parsing
-│   │   ├── queue_service.py   # Concurrency-limited worker queue
-│   │   ├── audio_metadata.py  # Mutagen tags & cover art extractor
-│   │   └── uploader.py        # Telegram file sender (size limits & album handling)
+│   │   ├── telethon_client.py # TelegramClient setup & interactive terminal login
+│   │   ├── uploader.py        # client.send_file() with rich terminal progress bar
+│   │   ├── audio_metadata.py  # Mutagen tags & thumbnail extractor
+│   │   └── lucida.py          # Asynchronous lucidadl execution
 │   └── utils/
-│       ├── url_parser.py      # Music provider URL & type classifier
-│       └── helpers.py         # Formatters, progress bar, directory cleanup
+│       ├── url_parser.py      # Music URL classifier (Spotify, Apple, Qobuz, etc.)
+│       └── helpers.py         # Formatters, human-readable byte sizes
 ├── scripts/
-│   ├── run_bot.sh             # Bot launch script
+│   ├── run_bot.sh             # Launch script
 │   └── setup_lucida_session.sh# Headless Cloudflare clearance helper
-├── Dockerfile                 # Production container build
-├── docker-compose.yml         # Container orchestration (service: flacdl)
-├── requirements.txt           # Python dependencies
+├── requirements.txt           # Telethon, rich, cryptg, mutagen, etc.
 ├── .env.example               # Configuration template
-├── flacdl.service             # Linux systemd daemon unit
-└── setup.sh                   # One-click installation script
+└── README.md                  # Complete documentation
 ```
-
----
-
-## 📄 License
-This project is open-source under the MIT License.
