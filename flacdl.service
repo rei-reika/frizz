@@ -1,0 +1,19 @@
+[Unit]
+Description=FlacDL Telegram Bot Service
+After=network.target
+
+[Service]
+Type=simple
+User=reii
+WorkingDirectory=/home/reii/t-server
+ExecStart=/home/reii/t-server/scripts/run_bot.sh
+Restart=always
+RestartSec=10
+EnvironmentFile=/home/reii/t-server/.env
+
+# Standard output and error logging
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
