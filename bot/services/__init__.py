@@ -1,14 +1,14 @@
 from .lucida import lucida_runner
 from .audio_metadata import AudioMetadataExtractor, AudioMetadata
-from .uploader import TelethonUploader, create_rich_progress
-from .telethon_client import get_client, start_client_interactive
+from .uploader import TelegramUploader
+from .queue_service import QueueManager, init_queue, queue_manager
 
 __all__ = [
     "lucida_runner",
     "AudioMetadataExtractor",
     "AudioMetadata",
-    "TelethonUploader",
-    "create_rich_progress",
-    "get_client",
-    "start_client_interactive"
+    "TelegramUploader",
+    "QueueManager",
+    "init_queue",
+    "queue_manager"
 ]
