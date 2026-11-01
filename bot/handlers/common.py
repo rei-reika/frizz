@@ -25,7 +25,7 @@ async def handle_start(message: Message):
         f"/status - Check server & bot status\n"
     )
     if message.from_user and config.is_admin(message.from_user.id):
-        welcome_text += "\n<i>🛡️ Admin commands: /doctor, /setup_help, /status, /broadcast</i>\n"
+        welcome_text += "\n<i>🛡️ Admin commands: /doctor, /setup_help, /status, /cache, /delcache, /broadcast</i>\n"
 
     await message.answer(welcome_text, parse_mode="HTML")
 
@@ -52,9 +52,11 @@ async def handle_help(message: Message):
         f"<b>3. Direct Sending:</b>\n"
         f"You don't even need commands! Just paste any link into the chat and the bot "
         f"will automatically determine if it's a track, album, or playlist.\n\n"
-        f"<b>4. Telegram 50MB Upload Limit Note:</b>\n"
-        f"By default, Telegram cloud bots allow up to 50MB per file. If a 24-bit FLAC exceeds "
-        f"50MB, the bot will automatically convert it to a pristine 320kbps MP3 so you can still receive it."
+        f"<b>4. Telegram file_id Cloud Caching & 50MB Limit Bypass:</b>\n"
+        f"Whenever a track is downloaded or pre-cached, its Telegram <code>file_id</code> is saved.\n"
+        f"• Repeated requests are sent <b>instantly</b> without re-downloading or re-uploading!\n"
+        f"• Files served via <code>file_id</code> completely bypass the 50MB local upload limit!\n"
+        f"• Admins can forward or upload files up to 2GB directly to the bot to pre-cache them."
     )
     await message.answer(help_text, parse_mode="HTML")
 

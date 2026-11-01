@@ -1,6 +1,6 @@
 import shutil
 import psutil
-from aiogram import Router
+from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.types import Message
 from bot.config import config
@@ -133,3 +133,165 @@ async def handle_broadcast(message: Message):
         f"✅ Sent: {sent}\n"
         f"❌ Failed: {failed}"
     )
+
+
+@router.message(Command("cache"))
+async def handle_cache_stats(message: Message):
+    """View Telegram file_id cache statistics."""
+    if not message.from_user or not config.is_admin(message.from_user.id):
+        await message.answer("⛔ Administrator only.")
+        return
+
+    stats = await db.get_cache_stats()
+    recent_items = await db.list_cached_files(limit=8)
+
+    items_text = ""
+    for idx, item in enumerate(recent_items, 1):
+        items_text += (
+            f"<b>{idx}.</b> <code>{escape_html(item['file_key'])}</code>\n"
+            f"   📦 {format_bytes(item['file_size'])} | Hits: <b>{item['access_count']}</b>\n"
+        )
+
+    if not items_text:
+        items_text = "<i>(No files cached yet)</i>\n"
+
+    report = (
+        f"⚡ <b>Telegram file_id Cache Overview:</b>\n\n"
+        f"• Total Cached Files: <b>{stats['total_cached_files']}</b>\n"
+        f"• Total Stored File Size: <b>{format_bytes(stats['total_cached_size'])}</b>\n"
+        f"• Total Cache Hits: <b>{stats['total_cache_hits']}</b>\n"
+        f"• Saved Upload Bandwidth: <b>{format_bytes(stats['saved_bandwidth'])}</b>\n\n"
+        f"<b>📋 Recently Cached Items:</b>\n"
+        f"{items_text}\n"
+        f"<i>💡 Tip: Forward or upload any Audio/FLAC up to 2GB to this chat to pre-cache it!</i>"
+    )
+    await message.answer(report, parse_mode="HTML")
+
+
+@router.message(Command("delcache"))
+async def handle_delcache(message: Message):
+    """Delete a cached entry by key."""
+    if not message.from_user or not config.is_admin(message.from_user.id):
+        await message.answer("⛔ Administrator only.")
+        return
+
+    key = ""
+    if message.text:
+        parts = message.text.split(maxsplit=1)
+        if len(parts) > 1:
+            key = parts[1].strip()
+
+    if not key:
+        await message.answer("Usage: <code>/delcache &lt;file_key&gt;</code>", parse_mode="HTML")
+        return
+
+    deleted = await db.delete_cached_file(key)
+    if deleted:
+        await message.answer(f"✅ Cache entry <code>{escape_html(key)}</code> deleted.", parse_mode="HTML")
+    else:
+        await message.answer(f"⚠️ Cache entry <code>{escape_html(key)}</code> not found.", parse_mode="HTML")
+
+
+@router.message(F.audio | F.document)
+async def handle_admin_file_upload(message: Message):
+    """
+    Allow admins to manually upload/forward large files (up to 2GB via Telegram)
+    to pre-cache their file_id and bypass the 50MB Bot API upload limit.
+    """
+    if not message.from_user or not config.is_admin(message.from_user.id):
+        return
+
+    caption_key = message.caption.strip() if message.caption else ""
+    file_id = ""
+    file_unique_id = ""
+    file_name = ""
+    file_size = 0
+    media_type = "audio"
+    title = ""
+    performer = ""
+    duration = 0
+
+    if message.audio:
+        media_type = "audio"
+        audio = message.audio
+        file_id = audio.file_id
+        file_unique_id = audio.file_unique_id
+        file_size = audio.file_size or 0
+        file_name = audio.file_name or "track.flac"
+        title = audio.title or file_name
+        performer = audio.performer or "Unknown Artist"
+        duration = audio.duration or 0
+
+    elif message.document:
+        media_type = "document"
+        doc = message.document
+        file_id = doc.file_id
+        file_unique_id = doc.file_unique_id
+        file_size = doc.file_size or 0
+        file_name = doc.file_name or "file.bin"
+        title = file_name
+        performer = "Document Attachment"
+
+    # Determine cache key:
+    # 1. Custom key from caption if provided by admin
+    # 2. Or standard "Artist - Title.ext" if available
+    # 3. Or original file_name
+    primary_key = caption_key if caption_key else file_name
+    if not primary_key and performer and title:
+        primary_key = f"{performer} - {title}.flac"
+
+    # Save to database cache
+    await db.save_cached_file(
+        file_key=primary_key,
+        file_id=file_id,
+        file_unique_id=file_unique_id,
+        file_name=file_name,
+        file_size=file_size,
+        media_type=media_type,
+        title=title,
+        performer=performer,
+        duration=duration
+    )
+
+    # Also save normalized filename key if different
+    if file_name and file_name.lower() != primary_key.lower():
+        await db.save_cached_file(
+            file_key=file_name,
+            file_id=file_id,
+            file_unique_id=file_unique_id,
+            file_name=file_name,
+            file_size=file_size,
+            media_type=media_type,
+            title=title,
+            performer=performer,
+            duration=duration
+        )
+
+    # Also save performer - title alias if applicable
+    if performer and title and performer != "Unknown Artist":
+        artist_title_key = f"{performer} - {title}".lower()
+        await db.save_cached_file(
+            file_key=artist_title_key,
+            file_id=file_id,
+            file_unique_id=file_unique_id,
+            file_name=file_name,
+            file_size=file_size,
+            media_type=media_type,
+            title=title,
+            performer=performer,
+            duration=duration
+        )
+
+    await message.reply(
+        f"⚡ <b>File Cached Successfully in Telegram Cloud!</b>\n\n"
+        f"🔑 <b>Primary Key:</b> <code>{escape_html(primary_key)}</code>\n"
+        f"🆔 <b>file_id:</b> <code>{file_id[:35]}...</code>\n"
+        f"📦 <b>Size:</b> {format_bytes(file_size)}\n"
+        f"🎵 <b>Title:</b> {escape_html(title)}\n"
+        f"👤 <b>Artist:</b> {escape_html(performer)}\n"
+        f"📁 <b>Type:</b> <code>{media_type}</code>\n\n"
+        f"<i>✅ Users requesting this song or key will now receive it instantly via Telegram's cloud, "
+        f"bypassing downloading and bypassing the 50MB upload limit!</i>",
+        parse_mode="HTML"
+    )
+

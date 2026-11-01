@@ -23,11 +23,16 @@ Supports seamless single-track downloads, full albums, and entire public streami
   - Prevents server overload with configurable worker pool (`MAX_CONCURRENT_DOWNLOADS`).
   - Real-time download progress updates and debounced status editing.
   - In-chat cancellation button (`[ ❌ Cancel ]`) for active or queued downloads.
-- **📦 Smart Telegram Upload Handling:**
-  - Telegram Cloud Bot API restricts file uploads to **50MB**. If a lossless FLAC exceeds 50MB, the bot automatically compresses it to a pristine 320kbps MP3 so you never miss a track.
-  - Supports **Local Telegram Bot API Server** (`LOCAL_BOT_API_URL`) for up to **2GB** per audio file!
+- **📦 Smart Telegram file_id Cloud Caching & 50MB Limit Bypass:**
+  - Built-in SQLite database caching system maps song keys, filenames, and query URLs directly to Telegram's cloud `file_id`.
+  - **Instant Delivery:** Subsequent requests for the same track are sent instantly via `file_id` (0 bandwidth, 0 server CPU).
+  - **Bypasses 50MB Upload Limit:** Files delivered by `file_id` are already hosted in Telegram's cloud datacenter, completely bypassing the local 50MB upload limitation!
+  - **Admin Pre-Caching (up to 2GB):** Admins can forward or upload files directly to the bot to pre-cache large FLAC files.
+  - Automatic 320kbps MP3 fallback compression if a new un-cached FLAC initially exceeds 50MB.
 - **🛡️ Access Control & Admin Tools:**
   - Whitelist mode (`ALLOWED_USERS`) to keep the bot private, or open to all.
+  - `/cache`: View total cached files, cache hits, and saved bandwidth.
+  - `/delcache <key>`: Delete a cached file entry.
   - `/doctor` command: Runs diagnostic self-checks.
   - `/status` command: Real-time system resources (CPU, RAM, Disk) and download counters.
   - `/setup_help`: Step-by-step guidance for Cloudflare clearance.
@@ -152,6 +157,8 @@ journalctl -u flacdl -f
 | `/settings` | Open interactive format, bitrate, and provider selector |
 | `/status` | View server CPU, RAM, disk space, and bot download statistics |
 | `/help` | Detailed help and supported music services |
+| `/cache` *(Admin)* | View Telegram file_id cloud cache stats & hits |
+| `/delcache <key>` *(Admin)* | Remove a cached entry from database |
 | `/doctor` *(Admin)* | Run `lucida doctor --live` connection diagnostics |
 | `/setup_help` *(Admin)* | View Cloudflare clearance instructions |
 | `/broadcast <msg>` *(Admin)* | Send an announcement to all users in the database |
