@@ -2,6 +2,7 @@ import asyncio
 import time
 from pathlib import Path
 <<<<<<< HEAD
+<<<<<<< HEAD
 from typing import Optional, Callable, Any, Union, List
 
 from telethon import TelegramClient
@@ -22,10 +23,15 @@ from rich.progress import (
 from rich.console import Console
 
 =======
+=======
+>>>>>>> parent of 30d016f (nice)
 from typing import List, Optional, Callable, Awaitable
 from aiogram import Bot
 from aiogram.types import FSInputFile
 from bot.config import config
+<<<<<<< HEAD
+>>>>>>> parent of 30d016f (nice)
+=======
 >>>>>>> parent of 30d016f (nice)
 from bot.services.audio_metadata import AudioMetadataExtractor, AudioMetadata
 from bot.utils.helpers import format_bytes, format_duration
@@ -34,6 +40,7 @@ from bot.utils.helpers import format_bytes, format_duration
 console = Console()
 
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 def create_rich_progress() -> Progress:
     """Create a styled rich progress bar for terminal display."""
@@ -147,6 +154,8 @@ class TelethonUploader:
                     f"📁 `{filename}`\n"
                     f"📊 `{current / (1024*1024):.1f} MB / {total / (1024*1024):.1f} MB` ({pct:.1f}%)\n"
 =======
+=======
+>>>>>>> parent of 30d016f (nice)
     async def upload_files(
         self,
         chat_id: int,
@@ -262,6 +271,7 @@ class TelethonUploader:
             return sent_message
 
 <<<<<<< HEAD
+<<<<<<< HEAD
         finally:
             if rich_progress:
                 rich_progress.stop()
@@ -298,6 +308,8 @@ class TelethonUploader:
                 if index < total:
                     await asyncio.sleep(1.0)
 =======
+=======
+>>>>>>> parent of 30d016f (nice)
             try:
                 if send_as == "document":
                     doc = FSInputFile(str(curr_file))
