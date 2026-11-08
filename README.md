@@ -1,6 +1,6 @@
 # 🎵 FlacDL Telegram Bot
 
-A production-grade, asynchronous Telegram Bot designed to download lossless (FLAC) and high-bitrate music using **`lucidadl`** and **`lucida.to`**.
+A production-grade, asynchronous Telegram Bot designed to download lossless (FLAC) and high-bitrate music.
 
 Supports seamless single-track downloads, full albums, and entire public streaming playlists from **Spotify, Apple Music, Deezer, TIDAL, Qobuz, SoundCloud, Amazon Music, and YouTube Music**.
 
@@ -49,14 +49,6 @@ Run the automated setup script:
 ```bash
 ./setup.sh
 ```
-Or manually install dependencies:
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-pip install lucidadl playwright
-python -m playwright install chromium
-```
 
 ### 3. Configure `.env`
 Copy the example environment configuration:
@@ -71,33 +63,7 @@ ALLOWED_USERS=              # Optional: your Telegram user ID
 ADMIN_IDS=                  # Optional: your Telegram user ID
 ```
 
-### 4. Cloudflare Clearance Setup
-Because `lucida.to` uses Cloudflare protection, `lucidadl` needs an initial clearance session token:
-
-#### Option A: Headless Linux Server (using Xvfb)
-Run the bundled assistant:
-```bash
-./scripts/setup_lucida_session.sh
-```
-Or manually:
-```bash
-xvfb-run -a lucida setup
-```
-
-#### Option B: Setup on Local Desktop & Copy Session (Most Reliable)
-If Cloudflare triggers an interactive Turnstile captcha that cannot complete headlessly:
-1. On your personal computer (Windows/macOS/Linux Desktop):
-   ```bash
-   pipx install lucidadl
-   lucida setup
-   ```
-2. Complete the browser check.
-3. Copy the generated data folder to your server:
-   - Linux/macOS: `~/.local/share/lucidadl`
-   - Windows: `%LOCALAPPDATA%\lucidadl`
-   - Destination on server: `~/.local/share/lucidadl`
-
-### 5. Launch the Bot
+### 4. Launch the Bot
 ```bash
 ./scripts/run_bot.sh
 ```
